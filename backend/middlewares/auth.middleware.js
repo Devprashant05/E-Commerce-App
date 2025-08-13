@@ -19,7 +19,7 @@ const verifyJwt = asyncHandler(async (req, res, next) => {
         );
 
         if (!user) {
-            throw new ApiError(403, "Invalid Access Token");
+            throw new ApiError(403, "No Access Token");
         }
 
         req.user = user;
@@ -29,4 +29,12 @@ const verifyJwt = asyncHandler(async (req, res, next) => {
     }
 });
 
-export default verifyJwt;
+const authorizeAdmin = (req, _, next) => {
+    if (req.user?._id && req.user.isAdmin) {
+        next();
+    } else {
+        throw new ApiError(401, "Not authorized as Admin");
+    }
+};
+
+export { verifyJwt, authorizeAdmin };

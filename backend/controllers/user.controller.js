@@ -133,4 +133,77 @@ const logoutUser = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, {}, "User Logged Out Successfully"));
 });
 
-export { registerUser, loginUser, logoutUser };
+const getAllUsers = asyncHandler(async (req, res) => {
+    const users = await User.find({});
+    if (!users) {
+        throw new ApiError(401, "No users found");
+    }
+    return res
+        .status(200)
+        .json(new ApiResponse(200, users, "All Users fetched successfully"));
+});
+
+const getCurrentUserProfile = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user?._id).select(
+        "-password -refreshToken"
+    );
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                user,
+                "Current User Details fetched successfully"
+            )
+        );
+});
+
+const updateCurrentUserProfile = asyncHandler(async (req, res) => {
+    const userId = req.user?._id;
+    const user = await User.findById(userId);
+
+    if (user) {
+        user.username = req.body.username || user.username;
+        user.fullname = req.body.fullname || user.fullname;
+        user.email = req.body.email || user.email;
+
+        if (req.body.password) {
+            user.password = req.body.password;
+        }
+
+        const updatedUserProfile = await user.save({
+            validateModifiedOnly: true,
+        });
+
+        if (!updatedUserProfile) {
+            throw new ApiError(
+                500,
+                "Something went wrong while updatin profile"
+            );
+        }
+
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    updatedUserProfile,
+                    "User Profle is updated"
+                )
+            );
+    } else {
+        throw new ApiError(404, "User not found");
+    }
+});
+
+export {
+    registerUser,
+    loginUser,
+    logoutUser,
+    getAllUsers,
+    getCurrentUserProfile,
+    updateCurrentUserProfile,
+};
