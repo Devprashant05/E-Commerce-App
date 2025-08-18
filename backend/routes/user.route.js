@@ -5,7 +5,10 @@ import {
     logoutUser,
     getAllUsers,
     getCurrentUserProfile,
-    updateCurrentUserProfile
+    updateCurrentUserProfile,
+    deleteUserByID,
+    getUserById,
+    updateUserById
 } from "../controllers/user.controller.js";
 import { verifyJwt, authorizeAdmin } from "../middlewares/auth.middleware.js";
 
@@ -21,5 +24,12 @@ router
     .route("/profile")
     .get(verifyJwt, getCurrentUserProfile)
     .patch(verifyJwt, updateCurrentUserProfile);
+
+// Admin Routes
+router
+    .route("/:id")
+    .delete(verifyJwt, authorizeAdmin, deleteUserByID)
+    .get(verifyJwt, authorizeAdmin, getUserById)
+    .patch(verifyJwt, authorizeAdmin, updateUserById);
 
 export default router;

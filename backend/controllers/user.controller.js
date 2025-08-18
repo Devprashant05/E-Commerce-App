@@ -1,3 +1,4 @@
+import { isValidObjectId } from "mongoose";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -199,6 +200,97 @@ const updateCurrentUserProfile = asyncHandler(async (req, res) => {
     }
 });
 
+const deleteUserByID = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    console.log(id);
+
+    if (!isValidObjectId(id)) {
+        throw new ApiError(404, "Invalid id! Please try again");
+    }
+
+    const user = await User.findById(id);
+
+    if (user) {
+        if (user.isAdmin) {
+            throw new ApiError(400, "Cannot delete the admin user");
+        }
+
+        const deletedUser = await User.findByIdAndDelete(id);
+
+        if (!deletedUser) {
+            throw new ApiError(500, "something went wrong while deleting user");
+        }
+
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(200, deletedUser, "Successfully Deleted User")
+            );
+    } else {
+        throw new ApiError(404, "User not found");
+    }
+});
+
+const getUserById = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+        throw new ApiError(404, "Invalid Id! Please try again");
+    }
+
+    const userInfo = await User.findById(id).select("-password -refreshToken");
+
+    if (!userInfo) {
+        throw new ApiError(404, "User not found");
+    } else {
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(200, userInfo, "User info fetched successfully")
+            );
+    }
+});
+
+const updateUserById = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+        throw new ApiError(404, "Invalid Id! Please try again");
+    }
+
+    const user = await User.findById(id);
+
+    if (user) {
+        user.username = req.body.username || user.username;
+        user.fullname = req.body.fullname || user.fullname;
+        user.email = req.body.email || user.email;
+        user.isAdmin = Boolean(req.body.isAdmin);
+
+        const updatedUser = await user.save();
+
+        if (!updatedUser) {
+            throw new ApiError(500, "something went wrong while updating user");
+        }
+
+        return res.status(200).json(
+            new ApiResponse(
+                200,
+                {
+                    _id: updatedUser._id,
+                    username: updatedUser.username,
+                    fullname: updatedUser.fullname,
+                    email: updatedUser.email,
+                    isAdmin: updatedUser.isAdmin,
+                },
+                "User details updated successfully"
+            )
+        );
+    } else {
+        throw new ApiError(404, "User not found");
+    }
+});
+
 export {
     registerUser,
     loginUser,
@@ -206,4 +298,7 @@ export {
     getAllUsers,
     getCurrentUserProfile,
     updateCurrentUserProfile,
+    deleteUserByID,
+    getUserById,
+    updateUserById,
 };
